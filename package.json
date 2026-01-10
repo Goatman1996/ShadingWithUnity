@@ -1,0 +1,67 @@
+{
+  "name": "shadingwithunity",
+  "displayName": "ShadingWithUnity",
+  "description": "Unity Shader Language Support",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.107.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:shaderlab",
+    "onLanguage:hlsl"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "snippets": [
+      {
+        "language": "hlsl",
+        "path": "./snippets/presetSnippets.json"
+      },
+      {
+        "language": "shaderlab",
+        "path": "./snippets/presetSnippets.json"
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "Shading With Unity",
+      "properties": {
+        "shadingwithunity.alwaysIncludes": {
+          "type": "array",
+          "default": [
+            "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl",
+            "Packages/com.unity.render-pipelines.universal/ShaderLibrary/GlobalIllumination.hlsl",
+            "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl",
+            "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl",
+            "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareNormalsTexture.hlsl"
+          ],
+          "description": "常驻索引，添加更多include，可在项目启动时，提前将这些文件收集",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.107.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "22.x",
+    "typescript-eslint": "^8.48.1",
+    "eslint": "^9.39.1",
+    "typescript": "^5.9.3",
+    "@vscode/test-cli": "^0.0.12",
+    "@vscode/test-electron": "^2.5.2"
+  }
+}
