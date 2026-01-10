@@ -1,0 +1,45 @@
+{
+    "Shading_1": {
+        "prefix": "Shader",
+        "body": [
+            "Shader \"$1\"",
+            "{",
+            "\t$2",
+            "}"
+        ],
+        "description": "Main"
+    },
+    "Shading_2": {
+        "prefix": "Properties",
+        "body": [
+            "Properties",
+            "{\n\t$1\n}"
+        ]
+    },
+    "Shading_3": {
+        "prefix": "TRANSFORM_TEX",
+        "body": [
+            "TRANSFORM_TEX"
+        ]
+    },
+    "Shading_6": {
+        "prefix": "SubShader",
+        "body": [
+            "SubShader",
+            "{\n\t$1\n}"
+        ]
+    },
+    "Shading_7": {
+        "prefix": "Pass",
+        "body": [
+            "Pass",
+            "{\n\t$1\n}"
+        ]
+    },
+    "Shading_8": {
+        "prefix": "HLSLPROGRAM",
+        "body": [
+            "HLSLPROGRAM\n$1\nENDHLSL"
+        ]
+    }
+}
