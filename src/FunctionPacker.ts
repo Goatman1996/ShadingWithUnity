@@ -5,6 +5,7 @@ import * as path from 'path';
 import * as fs from 'fs'
 
 namespace FunctionPacker {
+    const withLog = false;
     const _PackedMap = new Map<string, Boolean>();
     // const recorded: string[] = [];
     const _Snippets: vscode.CompletionItem[] = [];
@@ -16,6 +17,9 @@ namespace FunctionPacker {
     }
     export function GetFuncCount() {
         return _Snippets.length;
+    }
+    export function GetInCludeCount() {
+        return _QuickInclude.length;
     }
 
     export async function Launch() {
@@ -33,46 +37,47 @@ namespace FunctionPacker {
             let alwaysIncudePath = result[i];
             let includePath = Utils.GetAbsoluteIncludePath('', alwaysIncudePath);
             if (!includePath) continue;
-            // let doc = await vscode.workspace.openTextDocument(vscode.Uri.file(includePath));
             let doc = await SaveOpenDoc(vscode.Uri.file(includePath));
             await PackDocument(doc);
         }
-
-        vscode.workspace.findFiles('**/Library/PackageCache/com.unity.render-pipelines.core*/**/*.hlsl', "**/Editor/**").then((uris) => {
-            // console.log(uris);
-            for (let index = 0; index < uris.length; index++) {
-                const element = uris[index];
-                let sourcePath = element.fsPath;
-                let a = sourcePath.split('com.unity.render-pipelines.core')[1];
-                let b = a.indexOf('/');
-                let c = a.substring(b);
-                let fileName = path.basename(sourcePath);
-                let dir = path.dirname(sourcePath);
-                // console.log(c + '/' + fileName);
-                let item = new vscode.CompletionItem("include " + fileName, vscode.CompletionItemKind.Snippet);
-                item.insertText = `include \"Packages/com.unity.render-pipelines.core${c}\"`;
-                _PushFunctionItem(item);
-
+        let coreInc = '**/Library/PackageCache/com.unity.render-pipelines.core*/**/*.hlsl';
+        let coreExc = "**/Editor/**";
+        let coreFiles = await Utils.findFilesIgnoringExclude(coreInc, coreExc);
+        if (coreFiles != null) {
+            for (let index = 0; index < coreFiles.length; index++) {
+                const element = coreFiles[index];
+                CollectInclude(vscode.Uri.file(element), 'com.unity.render-pipelines.core');
             }
-        });
+        }
 
-        vscode.workspace.findFiles('**/Library/PackageCache/com.unity.render-pipelines.universal*/**/*.hlsl', "**/Editor/**").then((uris) => {
-            // console.log(uris);
-            for (let index = 0; index < uris.length; index++) {
-                const element = uris[index];
-                let sourcePath = element.fsPath;
-                let a = sourcePath.split('com.unity.render-pipelines.universal')[1];
-                let b = a.indexOf('/');
-                let c = a.substring(b);
-                let fileName = path.basename(sourcePath);
-                let dir = path.dirname(sourcePath);
-                // console.log(c + '/' + fileName);
-                let item = new vscode.CompletionItem("include " + fileName, vscode.CompletionItemKind.Snippet);
-                item.insertText = `include \"Packages/com.unity.render-pipelines.universal${c}\"`;
-                _PushFunctionItem(item);
-
+        let urpInc = '**/Library/PackageCache/com.unity.render-pipelines.universal*/**/*.hlsl';
+        let urpExc = "**/Editor/**";
+        let urpFiles = await Utils.findFilesIgnoringExclude(urpInc, urpExc);
+        if (urpFiles != null) {
+            for (let index = 0; index < urpFiles.length; index++) {
+                const element = urpFiles[index];
+                CollectInclude(vscode.Uri.file(element), 'com.unity.render-pipelines.universal');
             }
-        });
+        }
+
+    }
+
+    function CollectInclude(element: vscode.Uri, spliter: string) {
+        let sourcePath = element.fsPath;
+        let a = sourcePath.split(spliter)[1];
+        let b = a.indexOf('/');
+        let c = a.substring(b);
+        let fileName = path.basename(sourcePath);
+        let dir = path.dirname(sourcePath);
+        let item = new vscode.CompletionItem("include " + fileName, vscode.CompletionItemKind.Snippet);
+        item.detail = "Provide by Shading With Unity Extension\n"
+
+        item.documentation = new vscode.MarkdownString("Extension");
+        item.filterText = "include " + fileName
+
+        item.insertText = `include \"Packages/${spliter}${c}\"`;
+
+        _PushFunctionItem(item);
     }
 
     export function _PushFunctionItem(item: vscode.CompletionItem) {
@@ -113,7 +118,7 @@ namespace FunctionPacker {
         let isCustomFile = Utils.IsDodumentInAssets(doc);
         let includeFiles = [];
 
-        console.log("收录文件: " + docPath);
+        if (withLog) console.log("收录文件: " + docPath);
         for (let i = 0; i < doc.lineCount; i++) {
             const line = doc.lineAt(i);
             const lineTrimed = line.text.trim();
@@ -131,7 +136,7 @@ namespace FunctionPacker {
         }
 
         for (let includeFile of includeFiles) {
-            console.log("收录Include: " + includeFile);
+            if (withLog) console.log("收录Include: " + includeFile);
             let includeDoc = await SaveOpenDoc(vscode.Uri.file(includeFile))
             await PackDocument(includeDoc);
         }
@@ -143,7 +148,7 @@ namespace FunctionPacker {
         let func = Utils.UnpackLineTrimed(lineTrimed, lineIndex);
         if (func == null) return;
         func.filePath = filePath;
-        console.log(`\t收录方法[${func.function}]`);
+        if (withLog) console.log(`\t收录方法[${func.function}]`);
         let funcItem = func.getCompletionItem();
         if (funcItem != null) {
             // console.log(`\t\t收录Item[${funcItem}]`);
@@ -169,8 +174,9 @@ namespace FunctionPacker {
         const wordRange = document.getWordRangeAtPosition(position);
         const word = document.getText(wordRange);
         const line = document.lineAt(position);
+        // if (word.length == 0) return;
+
         let firstLetter = word[0];
-        // console.log(firstLetter);
         const lineTrimed = line.text.trim();
 
 
@@ -195,10 +201,9 @@ namespace FunctionPacker {
         // }
 
 
-        if (lineTrimed.startsWith("#i")) {
+        if (lineTrimed.startsWith('#i')) {
             return _QuickInclude;
         }
-        if (lineTrimed.startsWith("#")) return null;
 
         if (firstLetter == '_') return _Snippets;
 

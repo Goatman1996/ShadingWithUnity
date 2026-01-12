@@ -10,6 +10,7 @@ const packageFolders = new Map<string, string>();
 
 export async function activate(context: vscode.ExtensionContext) {
 	console.log('插件启动');
+	vscode.window.showInformationMessage('插件启动');
 
 	await Launch();
 
@@ -19,12 +20,21 @@ export async function activate(context: vscode.ExtensionContext) {
 	// 定义代码片段
 	context.subscriptions.push(vscode.languages.registerCompletionItemProvider(['shaderlab', 'hlsl'], FunctionPacker.Provider));
 
+	// shadingwithunity.Test
+	context.subscriptions.push(vscode.commands.registerCommand('shadingwithunity.Test', () => {
+		vscode.window.showInformationMessage(`
+			doc[${FunctionPacker.GetPackedCount()}] 
+			func[${FunctionPacker.GetFuncCount()}]
+			inc[${FunctionPacker.GetInCludeCount()}]
+			`);
+	}));
+
 	// 监听打开文件时
 	context.subscriptions.push(vscode.workspace.onDidOpenTextDocument(FunctionPacker.PackDocument));
 
 	context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor((editor) => {
 		if (editor) {
-			FunctionPacker.PackDocument(editor.document);
+			FunctionPacker.PackDocument(editor?.document);
 		}
 	}));
 
@@ -72,6 +82,8 @@ async function provideHover(document: vscode.TextDocument, position: vscode.Posi
 	const workDir = path.dirname(fileName);
 	const word = document.getText(document.getWordRangeAtPosition(position));
 	const line = document.lineAt(position).text;
+	const lineTrimed = line.trim();
+	if (lineTrimed.startsWith("#include")) return;
 
 	// 等一秒
 	// await new Promise(resolve => setTimeout(resolve, 30));
@@ -79,19 +91,21 @@ async function provideHover(document: vscode.TextDocument, position: vscode.Posi
 	// 获取当前目录
 
 	if (token.isCancellationRequested) {
-		console.log('token.isCancellationRequested');
+		// console.log('token.isCancellationRequested');
 		return;
 	}
 
 	// 使用 Markdown 格式，支持换行
 	const content = new vscode.MarkdownString();
 
-	content.appendMarkdown(`**快速查看**:  \n`);
 
 	let funcName = Utils.getFunctionNameAtCursor(document, position);
-	let mathcedList = FunctionPacker.GetMatchedFunc(word);
-	for (let i = 0; i < mathcedList.length; i++) {
-		const func = mathcedList[i];
+	let matchedList = FunctionPacker.GetMatchedFunc(word);
+	if (matchedList.length == 0) return;
+	content.appendMarkdown(`**快速查看**:  \n`);
+
+	for (let i = 0; i < matchedList.length; i++) {
+		const func = matchedList[i];
 		content.appendMarkdown(`${func.function}  \n`);
 	}
 

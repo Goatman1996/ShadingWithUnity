@@ -20,7 +20,7 @@ export class Function {
         if (!this.completionItem) {
             // let fileName = path.basename(this.fromFile)
             this.completionItem = new vscode.CompletionItem(this.functionName, vscode.CompletionItemKind.Snippet);
-            this.completionItem.detail = "Provide by Unity Shading Extension\n"
+            this.completionItem.detail = "Provide by Shading With Unity Extension\n"
             this.completionItem.insertText = new vscode.SnippetString(this.functionName);
             this.completionItem.documentation = new vscode.MarkdownString(this.function);
             this.completionItem.documentation.appendMarkdown("\n\n---\n\n" + this.fileName);

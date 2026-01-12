@@ -3,9 +3,10 @@ import * as vscode from "vscode";
 import * as Definations from './Definations';
 import * as path from 'path';
 import * as fs from 'fs';
-import FunctionPacker from "./FunctionPacker";
+import fg from 'fast-glob';
 
 namespace Utils {
+    const withLog = false;
     export async function TryAsync<T>(promise: Promise<T>) {
         try {
             const result = await promise;
@@ -28,6 +29,44 @@ namespace Utils {
     export function IsDodumentInPackage(doc: vscode.TextDocument) {
         if (doc.fileName.includes("Library/PackageCache")) return true;
         return false;
+    }
+
+    export async function findFilesIgnoringExclude(coreInc: string, coreExc: string) {
+        // let uris: string[] = [];
+        // return uris;
+        // 获取工作区根目录
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        if (!workspaceFolders) {
+            vscode.window.showErrorMessage('No workspace folder found');
+            return;
+        }
+
+        const rootPath = workspaceFolders[0].uri.fsPath;
+
+        // 使用 glob 模块，它会忽略 VS Code 的 exclude 设置
+        const options: fg.Options = {
+            cwd: rootPath,
+            absolute: true,
+            onlyFiles: true,
+        };
+
+        if (true) {
+            options.ignore = [coreExc];
+        }
+
+        let uris: string[] = [];
+        try {
+            const files = await fg(coreInc, options);
+            for (const file of files) {
+                uris.push(file);
+            }
+            // vscode.window.showInformationMessage(`${uris.length} files found (ignoring files.exclude)`);
+
+            // 使用 uris 进行后续操作
+            return uris;
+        } catch (error) {
+            vscode.window.showErrorMessage(`Error finding files: ${error}`);
+        }
     }
 
     export function IsDodumentInAssets(doc: vscode.TextDocument) {
@@ -63,7 +102,7 @@ namespace Utils {
                 Utils.packageFolders.set("Packages/" + child.split('@')[0], 'Library/PackageCache/' + child);
             }
         }
-        console.log(Utils.packageFolders);
+        if (withLog) console.log(Utils.packageFolders);
         packageCacheDir.closeSync();
 
     }
@@ -155,10 +194,6 @@ namespace Utils {
         return !!functionNameMatch;
     }
 
-
-    /**
-     * 获取当前光标所在的函数名
-     */
     export function getFunctionNameAtCursor(
         document: vscode.TextDocument,
         position: vscode.Position
@@ -177,17 +212,6 @@ namespace Utils {
         const functionNameMatch = beforeOpenParen.match(/([a-zA-Z_][a-zA-Z0-9_]*)\s*$/);
 
         return functionNameMatch ? functionNameMatch[1] : null;
-    }
-    /**
-     * 判断光标是否在特定函数调用内
-     */
-    export function isCursorInSpecificFunction(
-        document: vscode.TextDocument,
-        position: vscode.Position,
-        functionName: string
-    ): boolean {
-        const currentFunction = getFunctionNameAtCursor(document, position);
-        return currentFunction === functionName;
     }
 }
 export = Utils;
