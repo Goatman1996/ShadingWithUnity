@@ -10,7 +10,7 @@ const packageFolders = new Map<string, string>();
 
 export async function activate(context: vscode.ExtensionContext) {
 	console.log('插件启动');
-	vscode.window.showInformationMessage('插件启动');
+	vscode.window.showInformationMessage('Shading With Unity Launched');
 
 	await Launch();
 
